@@ -1,106 +1,70 @@
-# 🗳️ Election Results Scraper (Czech Parliamentary Elections 2017)
+🗳️ Czech Election Results Scraper (2017)
 
-This project is a Python script that scrapes official election results from the Czech Statistical Office website and exports them into a structured CSV file.
+Python script for scraping official parliamentary election results from the Czech Statistical Office and exporting them into a structured CSV file.
 
----
+📌 Features
+Scrapes election results for a selected region (kraj)
+Extracts:
+Municipality code and name
+Registered voters
+Issued envelopes
+Valid votes
+Votes for each political party
+Automatically generates CSV with dynamic columns (all parties included)
+Handles Czech diacritics correctly
+Works for any region by changing the input URL
 
-## 📌 Features
+🚀 Installation
+Clone the repository and install dependencies:
 
-* Scrapes election results for a selected region (kraj)
-* Extracts:
+git clone <your-repo-url>
+cd <your-repo-name>
+pip install -r requirements.txt
 
-  * Municipality code and name
-  * Registered voters
-  * Issued envelopes
-  * Valid votes
-  * Votes for each political party
-* Automatically creates CSV with dynamic columns (all parties included)
-* Handles encoding issues (Czech diacritics)
-* Works for any region by changing the input URL
+Or install manually:
 
----
-
-## 🚀 Usage
-
-Run the script from terminal:
-
-```bash
-python main.py "<URL>" output.csv
-```
-
-### Example:
-
-```bash
-python main.py "https://volby.cz/pls/ps2017nss/ps32?xjazyk=CZ&xkraj=12&xnumnuts=7103" olomouc.csv
-```
-
----
-
-## 🌍 How to get the URL
-
-1. Go to:
-   https://volby.cz/pls/ps2017nss/ps3?xjazyk=CZ
-2. Select a region (kraj)
-3. Copy the URL from your browser
-4. Use it as input for the script
-
----
-
-## 📁 Output
-
-The script generates a CSV file with structure like:
-
-```
-code;location;registered;envelopes;valid;ANO 2011;ODS;Piráti;...
-```
-
-* Each row = one municipality
-* Each political party = separate column
-
----
-
-## 🧰 Requirements
-
-Install dependencies:
-
-```bash
 pip install requests beautifulsoup4
-```
 
----
+▶️ Usage
+Run the script from terminal:
+python main.py "<URL>" output.csv
+Example:
+python main.py "https://www.volby.cz/pls/ps2017nss/ps32?xjazyk=CZ&xkraj=11&xnumnuts=6206" Vyskov.csv
 
-## ⚙️ Technologies Used
+🌍 How to Get the Input URL
+Go to:
+https://volby.cz/pls/ps2017nss/ps3?xjazyk=CZ
+Select a region (kraj)
+Copy the URL from your browser
+Use it as input for the script
 
-* Python 3
-* requests
-* BeautifulSoup (bs4)
-* CSV module
+🧰 Technologies Used
+Python 3
+requests
+BeautifulSoup (bs4)
+CSV module
 
----
+⚙️ Notes
+CSV uses ; as delimiter (Excel/Google Sheets friendly in CZ/SK)
+Encoding is set to utf-8-sig for correct diacritics
+Recommended:
+Open in Google Sheets
+Or import into Excel via Data → From Text/CSV
 
-## ⚠️ Notes
+⚠️ Disclaimer
+This project is intended for educational purposes only.
+All data is scraped from publicly available sources provided by the Czech Statistical Office.
 
-* CSV uses `;` as delimiter (compatible with Excel/Google Sheets in CZ/SK)
-* Encoding is set to `utf-8-sig` for proper diacritics
-* For best results:
+📈 Possible Improvements
+Add progress bar
+Parallel downloading (faster scraping)
+Export to Excel (.xlsx)
+GUI or web interface
+Scrape all regions automatically
+Add CLI arguments (--help)
 
-  * Open CSV in Google Sheets
-  * or import into Excel via **Data → From Text/CSV**
-
----
-
-## 📈 Possible Improvements
-
-* Add progress bar
-* Parallel downloading (faster scraping)
-* Export to Excel (.xlsx)
-* GUI or web interface
-* Scrape all regions automatically
-
----
-
-## 👨‍💻 Author
-
-Created as a learning project for web scraping and data processing in Python.
-
----
+👨‍💻 Author
+Created as a learning project focused on:
+Web scraping
+Data processing
+Working with real-world datasets
