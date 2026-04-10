@@ -3,15 +3,17 @@ Scraper výsledků voleb do Poslanecké sněmovny 2017
 Použití: python main.py <url_uzemniho_celku> <vystupni_soubor.csv>
 """
 
-import sys
+# built-in
 import csv
+import sys
+from typing import List, Tuple, Dict
+
+# third-party
 import requests
 from bs4 import BeautifulSoup
 
 
-# ── Validace argumentů ────────────────────────────────────────────────────────
-
-def validate_args():
+def validate_args() -> Tuple[str, str]:
     """Zkontroluje vstupní argumenty."""
     if len(sys.argv) != 3:
         print("Použitie: python main.py <URL> <output.csv>")
@@ -31,8 +33,6 @@ def validate_args():
     return url, output_file
 
 
-# ── Stahování stránek ─────────────────────────────────────────────────────────
-
 def fetch_page(url: str) -> BeautifulSoup:
     """Stáhne stránku a vrátí BeautifulSoup objekt."""
     response = requests.get(url, timeout=10)
@@ -40,75 +40,73 @@ def fetch_page(url: str) -> BeautifulSoup:
     return BeautifulSoup(response.text, "html.parser")
 
 
-# ── Parsování seznamu obcí ────────────────────────────────────────────────────
+def get_value(soup: BeautifulSoup, header: str) -> str:
+    """Vrátí hodnotu z tabulky podle headeru."""
+    tag = soup.find("td", {"headers": header})
+    if not tag:
+        return "0"
 
-def get_municipality_links(soup: BeautifulSoup, base_url: str):
-    """Vrátí seznam obcí (code, name, url)."""
-    municipalities = []
+    return tag.get_text(strip=True).replace("\xa0", "").replace(" ", "")
 
-    table = soup.find("table", {"id": "ps32_t1"})
-    if table is None:
-        table = soup.find("table")
 
-    rows = table.find_all("tr")[2:]
+def get_municipality_links(
+    soup: BeautifulSoup, base_url: str
+) -> List[Tuple[str, str, str]]:
+    """Vrátí seznam obcí (code, name, url) ze všech tabulek."""
+    municipalities: List[Tuple[str, str, str]] = []
 
-    for row in rows:
-        cols = row.find_all("td")
-        if len(cols) < 2:
-            continue
+    tables = soup.find_all("table")
 
-        code = cols[0].get_text(strip=True)
-        name = cols[1].get_text(strip=True)
+    for table in tables:
+        rows = table.find_all("tr")
 
-        link_tag = cols[0].find("a")
-        if not link_tag:
-            continue
+        for row in rows:
+            cols = row.find_all("td")
 
-        href = link_tag["href"]
-        base = base_url.rsplit("/", 1)[0]
-        full_url = f"{base}/{href.lstrip('./')}"
+            if len(cols) < 2:
+                continue
 
-        municipalities.append((code, name, full_url))
+            code = cols[0].get_text(strip=True)
+            name = cols[1].get_text(strip=True)
+
+            link_tag = cols[0].find("a")
+            if not link_tag:
+                continue
+
+            href = link_tag["href"]
+            base = base_url.rsplit("/", 1)[0]
+            full_url = f"{base}/{href.lstrip('./')}"
+
+            municipalities.append((code, name, full_url))
 
     return municipalities
 
 
-# ── Parsování jedné obce ──────────────────────────────────────────────────────
-
-def parse_municipality(url: str):
-    """Vrátí výsledky jedné obce jako dictionary."""
+def parse_municipality(url: str) -> Dict[str, str]:
+    """Vrátí výsledky jedné obce jako dictionary (finální robustní verze)."""
     soup = fetch_page(url)
-    result = {}
+    result: Dict[str, str] = {}
 
-    def get_value(header: str) -> str:
-        tag = soup.find("td", {"headers": header})
-        if not tag:
-            return "0"
+    result["Registered"] = get_value(soup, "sa2")
+    result["Envelopes"] = get_value(soup, "sa3")
+    result["Valid"] = get_value(soup, "sa6")
 
-        return (
-            tag.get_text(strip=True)
-            .replace("\xa0", "")
-            .replace(" ", "")
-        )
+    tables = soup.find_all("table")
 
-    result["registered"] = get_value("sa2")
-    result["envelopes"] = get_value("sa3")
-    result["valid"] = get_value("sa6")
-
-    # ── Strany ────────────────────────────────────────────────────────────────
-    party_tables = soup.select("table#ps311_t2")
-
-    if not party_tables:
-        party_tables = soup.find_all("table")
-
-    for table in party_tables:
+    for table in tables:
         for row in table.find_all("tr"):
             cols = row.find_all("td")
 
             if len(cols) < 3:
                 continue
 
+            party_number = cols[0].get_text(strip=True)
+
+            if not party_number.isdigit():
+                continue
+
             party = cols[1].get_text(strip=True)
+
             votes = (
                 cols[2]
                 .get_text(strip=True)
@@ -116,29 +114,29 @@ def parse_municipality(url: str):
                 .replace(" ", "")
             )
 
-            if party and votes.isdigit():
+            if party and votes:
                 result[party] = votes
 
     return result
 
 
-# ── Sběr všech dat ────────────────────────────────────────────────────────────
-
-def collect_all_results(municipalities):
+def collect_all_results(
+    municipalities: List[Tuple[str, str, str]]
+) -> List[Dict[str, str]]:
     """Projde všechny obce a vrátí seznam výsledků."""
-    all_rows = []
+    all_rows: List[Dict[str, str]] = []
 
     for code, name, url in municipalities:
         print(f"Spracovávam: {name}")
 
         data = parse_municipality(url)
 
-        row = {
-            "code": code,
-            "location": name,
-            "registered": data.get("registered", "0"),
-            "envelopes": data.get("envelopes", "0"),
-            "valid": data.get("valid", "0"),
+        row: Dict[str, str] = {
+            "Code": code,
+            "Location": name,
+            "Registered": data.get("Registered", "0"),
+            "Envelopes": data.get("Envelopes", "0"),
+            "Valid": data.get("Valid", "0"),
         }
 
         for key, value in data.items():
@@ -150,9 +148,7 @@ def collect_all_results(municipalities):
     return all_rows
 
 
-# ── CSV export ────────────────────────────────────────────────────────────────
-
-def write_csv(rows, output_file):
+def write_csv(rows: List[Dict[str, str]], output_file: str) -> None:
     """Zapíše data do CSV."""
     if not rows:
         print("Žiadne dáta.")
@@ -176,20 +172,21 @@ def write_csv(rows, output_file):
         for row in rows:
             writer.writerow(row)
 
-    print(f"\n✅ Hotovo → uložené do: {output_file}")
+    print(f"\nHotovo → uložené do: {output_file}")
 
 
-# ── MAIN ──────────────────────────────────────────────────────────────────────
-
-def main():
+def main() -> None:
     """Hlavní vstup programu."""
     url, output_file = validate_args()
 
     soup = fetch_page(url)
     municipalities = get_municipality_links(soup, url)
 
-    rows = collect_all_results(municipalities)
+    if not municipalities:
+        print("Chyba: URL neobsahuje zoznam obcí (pravdepodobne ps311)")
+        sys.exit(1)
 
+    rows = collect_all_results(municipalities)
     write_csv(rows, output_file)
 
 
