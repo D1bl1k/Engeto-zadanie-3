@@ -5,6 +5,7 @@ Python script for scraping official parliamentary election results from the Czec
 📌 Features
 Scrapes election results for a selected region (kraj)
 Extracts:
+
 Municipality code and name
 Registered voters
 Issued envelopes
@@ -27,8 +28,11 @@ pip install requests beautifulsoup4
 
 ▶️ Usage
 Run the script from terminal:
+
 python main.py "<URL>" output.csv
+
 Example:
+
 python main.py "https://www.volby.cz/pls/ps2017nss/ps32?xjazyk=CZ&xkraj=11&xnumnuts=6206" Vyskov.csv
 
 🌍 How to Get the Input URL
